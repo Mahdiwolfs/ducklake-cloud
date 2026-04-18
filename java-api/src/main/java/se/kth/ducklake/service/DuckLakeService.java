@@ -41,25 +41,29 @@ public class DuckLakeService {
             stmt.execute("LOAD ducklake");
             stmt.execute("LOAD postgres");
 
-            stmt.execute(("CREATE OR REPLACE SECRET pg_secret (" +
-                "TYPE postgres, " +
-                "HOST '" + pgHost + "', " +
-                "PORT " + pgPort + ", " +
-                "DATABASE '" + pgDb + "', " +
-                "USER '" + pgUser + "', " +
-                "PASSWORD '" + pgPass + "')"));
+            stmt.execute("""
+                CREATE OR REPLACE SECRET (
+                    TYPE postgres,
+                    HOST '%s',
+                    PORT %s,
+                    DATABASE '%s',
+                    USER '%s',
+                    PASSWORD '%s'
+                )""".formatted(pgHost, pgPort, pgDb, pgUser, pgPass));
 
             String dataPath;
             if (!s3Endpoint.isBlank()) {
                 stmt.execute("LOAD httpfs");
-                stmt.execute("CREATE OR REPLACE SECRET s3_secret (" +
-                    "TYPE s3, " +
-                    "KEY_ID '" + s3KeyId + "', " +
-                    "SECRET '" + s3Secret + "', " +
-                    "REGION '" + s3Region + "', " +
-                    "ENDPOINT '" + s3Endpoint + "', " +
-                    "URL_STYLE 'path', " +
-                    "USE_SSL false)");
+                stmt.execute("""
+                    CREATE OR REPLACE SECRET (
+                        TYPE s3,
+                        KEY_ID '%s',
+                        SECRET '%s',
+                        REGION '%s',
+                        ENDPOINT '%s',
+                        URL_STYLE 'path',
+                        USE_SSL false
+                    )""".formatted(s3KeyId, s3Secret, s3Region, s3Endpoint));
                 dataPath = "s3://" + s3Bucket + "/";
             } else {
                 dataPath = "./data/lake/";
