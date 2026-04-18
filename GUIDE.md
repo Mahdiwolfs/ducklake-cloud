@@ -546,6 +546,131 @@ Sätt det riktiga lösenordet som miljövariabel i KTH Cloud — aldrig i koden.
 
 ---
 
+## Skapa egna API-endpoints
+
+När infrastrukturen är på plats kan du skapa **vilka endpoints du vill** — det är bara SQL-frågor mot DuckLake bakom kulisserna.
+
+### Hur det fungerar
+
+1. **Definiera tabellen** i `init_db()` (Python) eller `openConnection()` (Java)
+2. **Skapa endpoints** i `main.py` (Python) eller `ApiController.java` (Java)
+3. **Skydda skrivoperationer** med API-nyckel
+
+### Exempel — lägga till en ny tabell och endpoints
+
+**Python — steg 1: skapa tabellen i database.py**
+```python
+def init_db():
+    con = get_conn()
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS lake.vader (
+            datum DATE,
+            stad VARCHAR,
+            temperatur DOUBLE
+        )
+    """)
+    con.close()
+```
+
+**Python — steg 2: skapa endpoints i main.py**
+```python
+class NyVader(BaseModel):
+    datum: str
+    stad: str
+    temperatur: float
+
+@app.get("/api/vader")
+def get_vader():
+    con = get_conn()
+    rows = con.execute("SELECT datum, stad, temperatur FROM lake.vader ORDER BY datum").fetchall()
+    con.close()
+    return [{"datum": str(r[0]), "stad": r[1], "temperatur": r[2]} for r in rows]
+
+@app.post("/api/vader", status_code=201, dependencies=[Depends(verify_key)])
+def ny_vader(v: NyVader):
+    con = get_conn()
+    con.execute("INSERT INTO lake.vader VALUES (?, ?, ?)", [v.datum, v.stad, v.temperatur])
+    con.close()
+    return {"datum": v.datum, "stad": v.stad, "temperatur": v.temperatur}
+
+@app.delete("/api/vader/{datum}", dependencies=[Depends(verify_key)])
+def radera_vader(datum: str):
+    con = get_conn()
+    con.execute("DELETE FROM lake.vader WHERE datum = ?", [datum])
+    con.close()
+    return {"deleted": datum}
+```
+
+**Java — steg 1: skapa tabellen i DuckLakeService.java**
+```java
+stmt.execute("""
+    CREATE TABLE IF NOT EXISTS lake.vader (
+        datum DATE,
+        stad VARCHAR,
+        temperatur DOUBLE
+    )""");
+```
+
+**Java — steg 2: skapa endpoints i ApiController.java**
+```java
+record NyVader(String datum, String stad, double temperatur) {}
+
+@GetMapping("/api/vader")
+public List<Map<String, Object>> getVader() throws Exception {
+    return lake.query("SELECT datum, stad, temperatur FROM lake.vader ORDER BY datum");
+}
+
+@PostMapping("/api/vader")
+public ResponseEntity<?> nyVader(@RequestHeader(value = "X-API-Key", required = false) String key,
+                                  @RequestBody NyVader v) throws Exception {
+    if (!validKey(key)) return unauthorized();
+    lake.update("INSERT INTO lake.vader VALUES (?, ?, ?)", v.datum(), v.stad(), v.temperatur());
+    return ResponseEntity.status(201).body(Map.of("datum", v.datum(), "stad", v.stad()));
+}
+
+@DeleteMapping("/api/vader/{datum}")
+public ResponseEntity<?> raderaVader(@PathVariable String datum,
+                                      @RequestHeader(value = "X-API-Key", required = false) String key) throws Exception {
+    if (!validKey(key)) return unauthorized();
+    lake.update("DELETE FROM lake.vader WHERE datum = ?", datum);
+    return ResponseEntity.ok(Map.of("deleted", datum));
+}
+```
+
+### Viktigt att tänka på
+
+- **GET-endpoints** kan vara öppna för alla — ingen nyckel krävs
+- **POST/DELETE-endpoints** bör skyddas med `X-API-Key`-headern
+- **Tabellnamnet** i SQL måste matcha det du definierade i `init_db()` / `openConnection()`
+- **DuckLake sparar all data automatiskt** som Parquet-filer — du behöver inte tänka på det
+
+### Seed-data — förifylld data vid start
+
+Om du vill att databasen ska innehålla exempeldata direkt, lägg till seed-logik som körs om tabellen är tom:
+
+**Python:**
+```python
+_con = get_conn()
+if _con.execute("SELECT COUNT(*) FROM lake.vader").fetchone()[0] == 0:
+    _con.executemany("INSERT INTO lake.vader VALUES (?, ?, ?)", [
+        ("2024-01-01", "Stockholm", -2.0),
+        ("2024-07-01", "Göteborg",  22.5),
+    ])
+_con.close()
+```
+
+**Java:**
+```java
+ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM lake.vader");
+rs.next();
+if (rs.getInt(1) == 0) {
+    stmt.execute("INSERT INTO lake.vader VALUES ('2024-01-01', 'Stockholm', -2.0)");
+    stmt.execute("INSERT INTO lake.vader VALUES ('2024-07-01', 'Göteborg', 22.5)");
+}
+```
+
+---
+
 ## Sammanfattning
 
 | Steg | Teknologi | Port | Visibility |
