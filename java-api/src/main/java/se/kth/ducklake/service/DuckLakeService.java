@@ -11,7 +11,6 @@ import java.util.*;
 public class DuckLakeService {
 
     @Value("${ducklake.postgres.host}")     private String pgHost;
-    @Value("${ducklake.postgres.port}")     private String pgPort;
     @Value("${ducklake.postgres.db}")       private String pgDb;
     @Value("${ducklake.postgres.user}")     private String pgUser;
     @Value("${ducklake.postgres.password}") private String pgPass;
@@ -45,11 +44,11 @@ public class DuckLakeService {
                 CREATE OR REPLACE SECRET (
                     TYPE postgres,
                     HOST '%s',
-                    PORT %s,
+                    PORT 5432,
                     DATABASE '%s',
                     USER '%s',
                     PASSWORD '%s'
-                )""".formatted(pgHost, pgPort, pgDb, pgUser, pgPass));
+                )""".formatted(pgHost, pgDb, pgUser, pgPass));
 
             String dataPath;
             if (!s3Endpoint.isBlank()) {
