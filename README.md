@@ -104,7 +104,6 @@ docker compose up --build
 | Variabel | Värde | Förklaring |
 |----------|-------|------------|
 | `POSTGRES_HOST` | `<postgres-deployment-namn>` | Adressen till PostgreSQL |
-| `POSTGRES_PORT` | `5432` | PostgreSQLs standardport |
 | `POSTGRES_DB` | `ducklake` | Databasens namn |
 | `POSTGRES_USER` | `duck` | Användaren från steg 1 |
 | `POSTGRES_PASSWORD` | `<lösenord>` | Lösenordet från steg 1 |
@@ -113,6 +112,8 @@ docker compose up --build
 | `S3_SECRET` | `<lösenord>` | Lösenordet från steg 2 |
 | `S3_BUCKET` | `ducklake` | Bucket-namn i MinIO |
 | `API_KEY` | `<valfritt lösenord>` | Skyddar POST/DELETE |
+
+> **OBS:** Sätt **inte** `POSTGRES_PORT` som miljövariabel — Kubernetes skriver över det automatiskt. Port 5432 är hårdkodad i koden.
 
 ---
 
@@ -187,8 +188,24 @@ client.send(post, HttpResponse.BodyHandlers.ofString());
 
 ---
 
+## Java API
+
+Det finns även ett Java-alternativ som ansluter **direkt** till DuckLake via JDBC — ingen Python-mellanhand:
+
+```
+HTTP-anrop → Spring Boot → DuckDB JDBC → DuckLake
+```
+
+Deploya med image: `ghcr.io/wildrelation/ducklake-cloud/java-api:latest` på port `8080`.  
+Samma miljövariabler som Python-API:et gäller (utan `POSTGRES_PORT`).
+
+---
+
 ## Källkod
 
-- API-kod: [`api/`](api/)
+- Python API: [`api/`](api/)
+- Java API: [`java-api/`](java-api/)
 - Lokal setup: [`docker-compose.yml`](docker-compose.yml)
 - Diagram: [`docs/`](docs/)
+- Fullständig guide: [`GUIDE.md`](GUIDE.md)
+- Studiehandledning: [`learning/`](learning/)
