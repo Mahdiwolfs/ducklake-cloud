@@ -26,7 +26,7 @@ def build(con: duckdb.DuckDBPyConnection):
             CASE Sex WHEN 'male' THEN 1 ELSE 0 END AS is_male,
             COALESCE(Age, 29.7)                   AS age,
             SibSp + Parch                         AS family_size,
-            Fare,
+            Fare                                  AS fare,
             CASE WHEN Embarked = 'S' THEN 0
                  WHEN Embarked = 'C' THEN 1
                  WHEN Embarked = 'Q' THEN 2
@@ -70,3 +70,4 @@ def build(con: duckdb.DuckDBPyConnection):
     """)
 
     return model, feature_cols, accuracy, report
+
