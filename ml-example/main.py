@@ -37,10 +37,10 @@ async def lifespan(app: FastAPI):
     _con.close()
 
 
-app = FastAPI(title="Titanic ML — DuckLake Feature Store", lifespan=lifespan)
+app = FastAPI(title="Titanic ML -- DuckLake Feature Store", lifespan=lifespan)
 
 
-# ── Endpoints ─────────────────────────────────────────────────────────────────
+# -- Endpoints -----------------------------------------------------------------
 
 @app.get("/healthz")
 def health():
@@ -99,14 +99,14 @@ def predict(p: Passagerare):
     return {
         "predicted_survival":   survival,
         "survival_probability": probability,
-        "tolkning": "Overlevde" if survival == 1 else "Overlevde inte"
+        "tolkning": "Sobrevivio" if survival == 1 else "No sobrevivio"
     }
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
     return """<!DOCTYPE html>
-<html lang="sv">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -118,8 +118,22 @@ def dashboard():
     header { background: #1a1a2e; color: white; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
     header h1 { font-size: 22px; }
     header p  { font-size: 13px; color: #aaa; margin-top: 4px; }
-    .lang-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-    .lang-btn:hover { background: rgba(255,255,255,0.2); }
+    .lang-switcher { display: flex; gap: 8px; align-items: center; }
+    .lang-switcher span { font-size: 12px; color: #aaa; margin-right: 4px; }
+    .lang-btn {
+      background: rgba(255,255,255,0.08);
+      border: 2px solid rgba(255,255,255,0.25);
+      color: white;
+      padding: 7px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .lang-btn:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.6); }
+    .lang-btn.active { background: #0d6efd; border-color: #0d6efd; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; padding: 24px 32px 0; }
     .card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
     .card .label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: .5px; }
@@ -152,73 +166,78 @@ def dashboard():
 <header>
   <div>
     <h1>Titanic ML &mdash; DuckLake Feature Store</h1>
-    <p data-i18n="subtitle">Random Forest-modell tranad pa Titanic-passagerardata</p>
+    <p data-i18n="subtitle"></p>
   </div>
-  <button class="lang-btn" onclick="toggleLang()">&#127760; English</button>
+  <div class="lang-switcher">
+    <span data-i18n="lang_label">Idioma:</span>
+    <button class="lang-btn active" id="btn-es" onclick="setLang('es')">ES</button>
+    <button class="lang-btn" id="btn-sv" onclick="setLang('sv')">SV</button>
+    <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
+  </div>
 </header>
 
 <div class="grid">
-  <div class="card"><div class="label" data-i18n="lbl_accuracy">Traffsakerhet</div><div class="value green" id="acc">&#8212;</div></div>
-  <div class="card"><div class="label" data-i18n="lbl_precision">Precision (overlevde)</div><div class="value blue" id="prec">&#8212;</div></div>
-  <div class="card"><div class="label" data-i18n="lbl_recall">Recall (overlevde)</div><div class="value orange" id="rec">&#8212;</div></div>
+  <div class="card"><div class="label" data-i18n="lbl_accuracy"></div><div class="value green" id="acc">--</div></div>
+  <div class="card"><div class="label" data-i18n="lbl_precision"></div><div class="value blue" id="prec">--</div></div>
+  <div class="card"><div class="label" data-i18n="lbl_recall"></div><div class="value orange" id="rec">--</div></div>
 </div>
 
 <div class="section" style="display:flex; gap:24px; flex-wrap:wrap;">
   <div>
-    <h2 data-i18n="chart_survival">Overlevnad i traningsdata</h2>
+    <h2 data-i18n="chart_survival"></h2>
     <div class="chart-wrap"><canvas id="survivalChart" width="360" height="260"></canvas></div>
   </div>
   <div>
-    <h2 data-i18n="chart_prob">Sannolikhetsfordelning</h2>
+    <h2 data-i18n="chart_prob"></h2>
     <div class="chart-wrap"><canvas id="probChart" width="360" height="260"></canvas></div>
   </div>
 </div>
 
 <div class="section">
-  <h2 data-i18n="tbl_heading">Prediktioner (senaste 20)</h2>
+  <h2 data-i18n="tbl_heading"></h2>
   <table id="pred-table">
     <thead><tr>
       <th>PassengerId</th>
-      <th data-i18n="tbl_prediction">Forutsagelse</th>
-      <th data-i18n="tbl_probability">Sannolikhet</th>
+      <th data-i18n="tbl_prediction"></th>
+      <th data-i18n="tbl_probability"></th>
     </tr></thead>
     <tbody></tbody>
   </table>
 </div>
 
 <div class="section">
-  <h2 data-i18n="form_heading">Testa en passagerare</h2>
+  <h2 data-i18n="form_heading"></h2>
   <div class="card">
     <div class="form-grid">
       <div class="form-group">
-        <label data-i18n="f_class">Klass</label>
+        <label data-i18n="f_class"></label>
         <select id="f-class">
-          <option value="1" data-i18n="class_1">1 &mdash; Forsta</option>
-          <option value="2" data-i18n="class_2">2 &mdash; Andra</option>
-          <option value="3" data-i18n="class_3" selected>3 &mdash; Tredje</option>
+          <option value="1" data-i18n="class_1"></option>
+          <option value="2" data-i18n="class_2"></option>
+          <option value="3" data-i18n="class_3" selected></option>
         </select>
       </div>
       <div class="form-group">
-        <label data-i18n="f_sex">Kon</label>
+        <label data-i18n="f_sex"></label>
         <select id="f-sex">
-          <option value="1" data-i18n="sex_male">Man</option>
-          <option value="0" data-i18n="sex_female">Kvinna</option>
+          <option value="1" data-i18n="sex_male"></option>
+          <option value="0" data-i18n="sex_female"></option>
         </select>
       </div>
       <div class="form-group">
-        <label data-i18n="f_age">Alder</label>
+        <label data-i18n="f_age"></label>
         <input type="number" id="f-age" value="30" min="0" max="100">
       </div>
       <div class="form-group">
-        <label data-i18n="f_family">Familjestorlek (SibSp+Parch)</label>
+        <label data-i18n="f_family"></label>
         <input type="number" id="f-family" value="0" min="0" max="10">
       </div>
       <div class="form-group">
-        <label data-i18n="f_fare">Biljettpris (&pound;)</label>
+        <label data-i18n="f_fare"></label>
         <input type="number" id="f-fare" value="15" min="0">
       </div>
       <div class="form-group">
-        <label data-i18n="f_embarked">Ombordstigning</label>
+        <label data-i18n="f_embarked"></label>
         <select id="f-emb">
           <option value="0">Southampton</option>
           <option value="1">Cherbourg</option>
@@ -226,95 +245,123 @@ def dashboard():
         </select>
       </div>
     </div>
-    <button class="btn" onclick="predict()" data-i18n="btn_predict">Forutsag</button>
+    <button class="btn" id="predict-btn" onclick="predict()"></button>
     <div id="result-box"></div>
   </div>
 </div>
 
 <script>
 const T = {
+  es: {
+    subtitle:       "Modelo Random Forest entrenado con datos de pasajeros del Titanic",
+    lang_label:     "Idioma:",
+    lbl_accuracy:   "Exactitud",
+    lbl_precision:  "Precisi\u00f3n (sobrevivi\u00f3)",
+    lbl_recall:     "Recall (sobrevivi\u00f3)",
+    chart_survival: "Supervivencia en datos de entrenamiento",
+    chart_prob:     "Distribuci\u00f3n de probabilidad",
+    tbl_heading:    "Predicciones (\u00faltimas 20)",
+    tbl_prediction: "Predicci\u00f3n",
+    tbl_probability:"Probabilidad",
+    form_heading:   "Probar un pasajero",
+    f_class:        "Clase",
+    class_1:        "1 \u2014 Primera",
+    class_2:        "2 \u2014 Segunda",
+    class_3:        "3 \u2014 Tercera",
+    f_sex:          "Sexo",
+    sex_male:       "Hombre",
+    sex_female:     "Mujer",
+    f_age:          "Edad",
+    f_family:       "Tama\u00f1o familiar (SibSp+Parch)",
+    f_fare:         "Precio del billete (\u00a3)",
+    f_embarked:     "Puerto de embarque",
+    btn_predict:    "Predecir",
+    survived:       "Sobrevivi\u00f3",
+    died:           "No sobrevivi\u00f3",
+    chart_survived: "Sobrevivi\u00f3",
+    chart_died:     "No sobrevivi\u00f3",
+  },
   sv: {
-    subtitle:      "Random Forest-modell tr\u00e4nad p\u00e5 Titanic-passagerardata",
-    lbl_accuracy:  "Tr\u00e4ffs\u00e4kerhet",
-    lbl_precision: "Precision (\u00f6verlevde)",
-    lbl_recall:    "Recall (\u00f6verlevde)",
-    chart_survival:"\u00d6verlevnad i tr\u00e4ningsdata",
-    chart_prob:    "Sannolikhetsf\u00f6rdelning",
-    tbl_heading:   "Prediktioner (senaste 20)",
-    tbl_prediction:"F\u00f6ruts\u00e4gelse",
+    subtitle:       "Random Forest-modell tr\u00e4nad p\u00e5 Titanic-passagerardata",
+    lang_label:     "Spr\u00e5k:",
+    lbl_accuracy:   "Tr\u00e4ffs\u00e4kerhet",
+    lbl_precision:  "Precision (\u00f6verlevde)",
+    lbl_recall:     "Recall (\u00f6verlevde)",
+    chart_survival: "\u00d6verlevnad i tr\u00e4ningsdata",
+    chart_prob:     "Sannolikhetsf\u00f6rdelning",
+    tbl_heading:    "Prediktioner (senaste 20)",
+    tbl_prediction: "F\u00f6ruts\u00e4gelse",
     tbl_probability:"Sannolikhet",
-    form_heading:  "Testa en passagerare",
-    f_class:       "Klass",
-    class_1:       "1 \u2014 F\u00f6rsta",
-    class_2:       "2 \u2014 Andra",
-    class_3:       "3 \u2014 Tredje",
-    f_sex:         "K\u00f6n",
-    sex_male:      "Man",
-    sex_female:    "Kvinna",
-    f_age:         "\u00c5lder",
-    f_family:      "Familjestorlek (SibSp+Parch)",
-    f_fare:        "Biljettpris (\u00a3)",
-    f_embarked:    "Ombordstigning",
-    btn_predict:   "F\u00f6ruts\u00e4g",
-    survived:      "\u00d6verlevde",
-    died:          "\u00d6verlevde inte",
-    chart_survived:"\u00d6verlevde",
-    chart_died:    "\u00d6verlevde inte",
-    lang_toggle:   "&#127760; English",
+    form_heading:   "Testa en passagerare",
+    f_class:        "Klass",
+    class_1:        "1 \u2014 F\u00f6rsta",
+    class_2:        "2 \u2014 Andra",
+    class_3:        "3 \u2014 Tredje",
+    f_sex:          "K\u00f6n",
+    sex_male:       "Man",
+    sex_female:     "Kvinna",
+    f_age:          "\u00c5lder",
+    f_family:       "Familjestorlek (SibSp+Parch)",
+    f_fare:         "Biljettpris (\u00a3)",
+    f_embarked:     "Ombordstigning",
+    btn_predict:    "F\u00f6ruts\u00e4g",
+    survived:       "\u00d6verlevde",
+    died:           "\u00d6verlevde inte",
+    chart_survived: "\u00d6verlevde",
+    chart_died:     "\u00d6verlevde inte",
   },
   en: {
-    subtitle:      "Random Forest model trained on Titanic passenger data",
-    lbl_accuracy:  "Accuracy",
-    lbl_precision: "Precision (survived)",
-    lbl_recall:    "Recall (survived)",
-    chart_survival:"Survival in training data",
-    chart_prob:    "Probability distribution",
-    tbl_heading:   "Predictions (latest 20)",
-    tbl_prediction:"Prediction",
+    subtitle:       "Random Forest model trained on Titanic passenger data",
+    lang_label:     "Language:",
+    lbl_accuracy:   "Accuracy",
+    lbl_precision:  "Precision (survived)",
+    lbl_recall:     "Recall (survived)",
+    chart_survival: "Survival in training data",
+    chart_prob:     "Probability distribution",
+    tbl_heading:    "Predictions (latest 20)",
+    tbl_prediction: "Prediction",
     tbl_probability:"Probability",
-    form_heading:  "Test a passenger",
-    f_class:       "Class",
-    class_1:       "1 \u2014 First",
-    class_2:       "2 \u2014 Second",
-    class_3:       "3 \u2014 Third",
-    f_sex:         "Sex",
-    sex_male:      "Male",
-    sex_female:    "Female",
-    f_age:         "Age",
-    f_family:      "Family size (SibSp+Parch)",
-    f_fare:        "Ticket fare (\u00a3)",
-    f_embarked:    "Port of embarkation",
-    btn_predict:   "Predict",
-    survived:      "Survived",
-    died:          "Did not survive",
-    chart_survived:"Survived",
-    chart_died:    "Did not survive",
-    lang_toggle:   "&#127760; Svenska",
+    form_heading:   "Test a passenger",
+    f_class:        "Class",
+    class_1:        "1 \u2014 First",
+    class_2:        "2 \u2014 Second",
+    class_3:        "3 \u2014 Third",
+    f_sex:          "Sex",
+    sex_male:       "Male",
+    sex_female:     "Female",
+    f_age:          "Age",
+    f_family:       "Family size (SibSp+Parch)",
+    f_fare:         "Ticket fare (\u00a3)",
+    f_embarked:     "Port of embarkation",
+    btn_predict:    "Predict",
+    survived:       "Survived",
+    died:           "Did not survive",
+    chart_survived: "Survived",
+    chart_died:     "Did not survive",
   }
 };
 
-let lang = 'sv';
+let lang = 'es';
 let survivalChart;
 
 function t(key) { return T[lang][key] || key; }
 
-function applyLang() {
-  document.documentElement.lang = lang;
+function setLang(l) {
+  lang = l;
+  document.documentElement.lang = l;
+  ['es','sv','en'].forEach(code => {
+    document.getElementById('btn-' + code).classList.toggle('active', code === l);
+  });
   document.querySelectorAll('[data-i18n]').forEach(el => {
     el.textContent = t(el.dataset.i18n);
   });
-  document.querySelector('.lang-btn').textContent = t('lang_toggle');
+  document.getElementById('predict-btn').textContent = t('btn_predict');
   if (survivalChart) {
     survivalChart.data.labels = [t('chart_died'), t('chart_survived')];
     survivalChart.update();
   }
   document.querySelectorAll('.badge.yes').forEach(b => b.textContent = t('survived'));
   document.querySelectorAll('.badge.no').forEach(b  => b.textContent = t('died'));
-}
-
-function toggleLang() {
-  lang = lang === 'sv' ? 'en' : 'sv';
-  applyLang();
 }
 
 async function load() {
@@ -360,7 +407,7 @@ async function load() {
     options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
   });
 
-  applyLang();
+  setLang('es');
 }
 
 async function predict() {
