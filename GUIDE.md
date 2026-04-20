@@ -474,7 +474,15 @@ jobs:
           tags: ${{ env.IMAGE }}
 ```
 
-`secrets.GITHUB_TOKEN` är automatiskt — ingen konfiguration behövs.
+Du kan kopiera och klistra in YAML-filen rakt av — `${{ github.repository }}` och `${{ github.actor }}` löses upp automatiskt av GitHub till ditt eget användarnamn och repo-namn. `secrets.GITHUB_TOKEN` är automatiskt och kräver ingen konfiguration.
+
+> **OBS:** Workflow:en förutsätter att din Python-kod ligger i en mapp som heter `api/`. Om du döpt mappen till något annat behöver du ändra `paths` och `context` i YAML-filen:
+> ```yaml
+> paths:
+>   - <din-mapp>/**   # ändra här
+> ...
+>       context: ./<din-mapp>   # och här
+> ```
 
 #### Steg 2 — Trigga bygget
 
@@ -553,6 +561,16 @@ jobs:
           push: true
           tags: ${{ env.IMAGE }}
 ```
+
+Du kan kopiera och klistra in YAML-filen rakt av — `${{ github.repository }}` och `${{ github.actor }}` löses upp automatiskt av GitHub till ditt eget användarnamn och repo-namn. `secrets.GITHUB_TOKEN` är automatiskt och kräver ingen konfiguration.
+
+> **OBS:** Workflow:en förutsätter att din Java-kod ligger i en mapp som heter `java-api/`. Om du döpt mappen till något annat behöver du ändra `paths` och `context` i YAML-filen:
+> ```yaml
+> paths:
+>   - <din-mapp>/**   # ändra här
+> ...
+>       context: ./<din-mapp>   # och här
+> ```
 
 #### Steg 2 — Trigga bygget
 
