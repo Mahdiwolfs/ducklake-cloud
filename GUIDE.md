@@ -427,55 +427,163 @@ CMD ["java", "-jar", "app.jar"]
 
 ## CI/CD — bygg och pusha Docker-imagen
 
-Innan du kan driftsätta på KTH Cloud måste Docker-imagen byggas och pushas till ett container-register. Det sköts automatiskt av GitHub Actions — men du behöver göra ett par saker för att det ska fungera.
+Innan du kan driftsätta på KTH Cloud måste Docker-imagen byggas och pushas till GHCR (GitHub Container Registry). Det sköts automatiskt av GitHub Actions när du pushar kod till ditt eget repo.
 
-### Steg 1 — Forka repo:t
+---
 
-Gå till [github.com/WildRelation/ducklake-cloud](https://github.com/WildRelation/ducklake-cloud) och klicka **Fork**. Du behöver ett eget repo för att GitHub Actions ska kunna pusha imagen till ditt konto.
+### Om du bygger Python API
 
-### Steg 2 — Förstå workflows
+#### Steg 1 — Skapa workflow-filen
 
-Repo:t innehåller två workflows i `.github/workflows/`:
+Skapa filen `.github/workflows/docker.yml` i ditt repo:
 
-| Fil | Triggas när | Bygger imagen |
-|-----|-------------|---------------|
-| `docker.yml` | Push till `main` med ändringar i `api/` | `ghcr.io/<användarnamn>/ducklake-cloud:latest` |
-| `docker-java-api.yml` | Push till `main` med ändringar i `java-api/` | `ghcr.io/<användarnamn>/ducklake-cloud/java-api:latest` |
+```yaml
+name: Build and push Docker image
 
-`secrets.GITHUB_TOKEN` används för autentisering mot GHCR — det är automatiskt, ingen konfiguration behövs.
+on:
+  push:
+    branches: [main]
+    paths:
+      - api/**
 
-### Steg 3 — Trigga första bygget
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
-Workflows triggar bara om filer i `api/` respektive `java-api/` ändras. Gör en liten ändring (t.ex. ett blanksteg i `api/requirements.txt`), committa och pusha till `main`:
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set lowercase image name
+        run: echo "IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]'):latest" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api
+          push: true
+          tags: ${{ env.IMAGE }}
+```
+
+`secrets.GITHUB_TOKEN` är automatiskt — ingen konfiguration behövs.
+
+#### Steg 2 — Trigga bygget
+
+Workflow:en triggar bara när filer i `api/` ändras. Committa och pusha dina ändringar:
 
 ```bash
 git add .
-git commit -m "trigger first build"
+git commit -m "add python api"
 git push
 ```
 
-Gå sedan till **Actions**-fliken på GitHub och vänta tills båda workflows är gröna.
+Gå till **Actions**-fliken på GitHub och vänta tills workflow:en är grön.
 
-### Steg 4 — Gör paketet publikt
+#### Steg 3 — Gör paketet publikt
 
-KTH Cloud behöver kunna hämta imagen utan autentisering. Som standard är GHCR-paket privata — du måste göra dem publika:
+KTH Cloud hämtar imagen utan autentisering. Som standard är GHCR-paket privata — du måste göra dem publika:
 
 1. Gå till din GitHub-profil → **Packages**
-2. Klicka på `ducklake-cloud` (och `ducklake-cloud/java-api` om du använder Java)
+2. Klicka på ditt paket (samma namn som ditt repo)
 3. Välj **Package settings** → **Change visibility** → **Public**
 
-> **OBS:** Om du hoppar över detta steg misslyckas deploymentet på KTH Cloud med `ImagePullBackOff` eller liknande fel.
+> **OBS:** Om du hoppar över detta steg misslyckas deploymentet på KTH Cloud med `ImagePullBackOff`.
 
-### Steg 5 — Använd rätt image-namn
+#### Steg 4 — Image-namn i KTH Cloud
 
-Nu kan du använda imagen i KTH Cloud. Image-namnen är:
+```
+ghcr.io/<ditt-github-användarnamn>/<ditt-repo-namn>:latest
+```
 
-| API | Image |
-|-----|-------|
-| Python | `ghcr.io/<ditt-användarnamn>/ducklake-cloud:latest` |
-| Java | `ghcr.io/<ditt-användarnamn>/ducklake-cloud/java-api:latest` |
+Exempel: om ditt GitHub-användarnamn är `anna` och repo:t heter `mitt-projekt` blir imagen:
+```
+ghcr.io/anna/mitt-projekt:latest
+```
 
-Byt ut `<ditt-användarnamn>` mot ditt GitHub-användarnamn (gemener).
+---
+
+### Om du bygger Java API
+
+#### Steg 1 — Skapa workflow-filen
+
+Skapa filen `.github/workflows/docker-java-api.yml` i ditt repo:
+
+```yaml
+name: Build and push java-api image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - java-api/**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set lowercase image name
+        run: echo "IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')/java-api:latest" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./java-api
+          push: true
+          tags: ${{ env.IMAGE }}
+```
+
+#### Steg 2 — Trigga bygget
+
+Workflow:en triggar bara när filer i `java-api/` ändras:
+
+```bash
+git add .
+git commit -m "add java api"
+git push
+```
+
+Gå till **Actions**-fliken på GitHub och vänta tills workflow:en är grön.
+
+#### Steg 3 — Gör paketet publikt
+
+1. Gå till din GitHub-profil → **Packages**
+2. Klicka på ditt paket (namnet slutar på `/java-api`)
+3. Välj **Package settings** → **Change visibility** → **Public**
+
+> **OBS:** Om du hoppar över detta steg misslyckas deploymentet på KTH Cloud med `ImagePullBackOff`.
+
+#### Steg 4 — Image-namn i KTH Cloud
+
+```
+ghcr.io/<ditt-github-användarnamn>/<ditt-repo-namn>/java-api:latest
+```
+
+Exempel:
+```
+ghcr.io/anna/mitt-projekt/java-api:latest
+```
 
 ---
 
