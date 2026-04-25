@@ -3,3 +3,5 @@ uvicorn==0.44.0
 duckdb==1.5.2
 minio==7.2.15
 python-multipart==0.0.20
+psycopg2-binary==2.9.9
+requests==2.32.3

@@ -23,25 +23,36 @@ services:
       - minio_data:/data
     ports:
       - "9000:9000"
-      - "9001:9001"
+      - "9001:9001"  # MinIO Console (admin UI)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      retries: 10
 
   api:
     build: ./api
     ports:
       - "8000:8000"
     environment:
+      # PostgreSQL
       POSTGRES_HOST:     postgres
-      POSTGRES_PORT:     5432
       POSTGRES_DB:       ducklake
       POSTGRES_USER:     duck
       POSTGRES_PASSWORD: postgres
+      # S3 / MinIO
       S3_ENDPOINT:       minio:9000
       S3_KEY_ID:         minioadmin
       S3_SECRET:         minioadmin
       S3_BUCKET:         ducklake
+      # API-nyckel — byt ut i produktion!
       API_KEY:           change-me
+      # Garage (prod) — sätt GARAGE_ADMIN_URL + GARAGE_ADMIN_TOKEN för att byta från MinIO
+      # GARAGE_ADMIN_URL:   http://garage:3903
+      # GARAGE_ADMIN_TOKEN: <admin-token>
     depends_on:
       postgres:
+        condition: service_healthy
+      minio:
         condition: service_healthy
 
 volumes:

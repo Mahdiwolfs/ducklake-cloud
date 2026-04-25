@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DuckLake Cloud</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3248;
+      --accent: #f5a623;
+      --accent2: #4a9eff;
+      --text: #e8eaf0;
+      --muted: #8b90a8;
+      --danger: #e05252;
+      --success: #52c97e;
+      --radius: 8px;
+      --font: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      height: 56px;
+    }
+    .logo { font-size: 1.2rem; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+    .logo span { color: var(--text); }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
+    .api-key-wrap { display: flex; align-items: center; gap: 0.5rem; }
+    .api-key-wrap label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+    .api-key-wrap input {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); border-radius: var(--radius);
+      padding: 0.35rem 0.6rem; font-size: 0.85rem; width: 180px;
+    }
+    .badge {
+      font-size: 0.72rem; padding: 0.2rem 0.5rem;
+      border-radius: 999px; font-weight: 600;
+    }
+    .badge.admin { background: #f5a62322; color: var(--accent); border: 1px solid #f5a62344; }
+    .badge.guest { background: #8b90a822; color: var(--muted); border: 1px solid var(--border); }
+
+    /* ── TABS ── */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      gap: 0.25rem;
+    }
+    .tab {
+      padding: 0.75rem 1.25rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── MAIN ── */
+    main { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── CARDS / SECTIONS ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+    .section-title { font-size: 1.1rem; font-weight: 600; }
+
+    /* ── BUTTONS ── */
+    btn, .btn {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.45rem 1rem; border-radius: var(--radius);
+      font-size: 0.875rem; font-weight: 500; cursor: pointer;
+      border: 1px solid transparent; transition: opacity 0.15s;
+      text-decoration: none;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: var(--accent); color: #0f1117; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border-color: var(--border); }
+    .btn-danger { background: #e0525222; color: var(--danger); border-color: #e0525244; }
+    .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th {
+      background: var(--surface2); color: var(--muted);
+      font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 0.65rem 1rem; text-align: left; border-bottom: 1px solid var(--border);
+    }
+    td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    /* ── EMPTY STATE ── */
+    .empty {
+      text-align: center; padding: 3rem 1rem; color: var(--muted);
+      border: 1px dashed var(--border); border-radius: var(--radius);
+    }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+
+    /* ── FORM ── */
+    .form-row { display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .form-group label { font-size: 0.8rem; color: var(--muted); }
+    .form-group input, .form-group select {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); border-radius: var(--radius);
+      padding: 0.45rem 0.75rem; font-size: 0.875rem; min-width: 160px;
+    }
+    .form-group select option { background: var(--surface2); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: #00000088; z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 2rem; max-width: 640px; width: 90%;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1.25rem; }
+    .script-box {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem;
+      font-family: 'Consolas', 'Fira Code', monospace;
+      font-size: 0.8rem; white-space: pre; overflow-x: auto;
+      color: #a8d8a8; line-height: 1.6; margin-bottom: 1rem;
+    }
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+
+    /* ── PREVIEW TABLE ── */
+    .preview-wrap { margin-top: 1rem; }
+    .preview-wrap .table-wrap { max-height: 320px; overflow-y: auto; }
+
+    /* ── ALERT ── */
+    .alert {
+      padding: 0.75rem 1rem; border-radius: var(--radius);
+      font-size: 0.875rem; margin-bottom: 1rem;
+    }
+    .alert-success { background: #52c97e22; border: 1px solid #52c97e44; color: var(--success); }
+    .alert-error   { background: #e0525222; border: 1px solid #e0525244; color: var(--danger); }
+    .alert-info    { background: #4a9eff22; border: 1px solid #4a9eff44; color: var(--accent2); }
+
+    /* ── SPINNER ── */
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.7s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── PERM BADGE ── */
+    .perm {
+      font-size: 0.72rem; padding: 0.15rem 0.5rem;
+      border-radius: 999px; font-weight: 600;
+    }
+    .perm.ro { background: #4a9eff22; color: var(--accent2); border: 1px solid #4a9eff44; }
+    .perm.rw { background: #52c97e22; color: var(--success); border: 1px solid #52c97e44; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">🦆 DuckLake <span>Cloud</span></div>
+  <div class="header-right">
+    <div class="api-key-wrap">
+      <label>Admin API-nyckel</label>
+      <input type="password" id="globalApiKey" placeholder="Lämna tom för gäst" oninput="onApiKeyChange()" />
+    </div>
+    <span class="badge guest" id="roleBadge">Gäst</span>
+  </div>
+</header>
+
+<!-- TABS -->
+<nav>
+  <div class="tab active" onclick="switchTab('datasets')">📦 Datasets</div>
+  <div class="tab" onclick="switchTab('access-keys')">🔑 Access-nycklar</div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!--  DATASETS PANEL                                               -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<main>
+  <div class="panel active" id="panel-datasets">
+    <div id="datasets-alert"></div>
+
+    <!-- Upload form (requires key) -->
+    <div class="section-header">
+      <div class="section-title">Datasets i lake</div>
+      <button class="btn btn-primary btn-sm" onclick="openUploadModal()">+ Ladda upp dataset</button>
+    </div>
+
+    <div id="datasets-list"><div class="spinner"></div></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  ACCESS KEYS PANEL                                            -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div class="panel" id="panel-access-keys">
+    <div id="keys-alert"></div>
+
+    <div class="section-title" style="margin-bottom:1.25rem">Generera access-nyckel</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Användarnamn</label>
+        <input type="text" id="keyUsername" placeholder="t.ex. student1" />
+      </div>
+      <div class="form-group">
+        <label>Behörighet</label>
+        <select id="keyPermission">
+          <option value="readonly">Read-only</option>
+          <option value="readwrite" id="rwOption">Read/Write (kräver admin-nyckel)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary" onclick="createKey()">Generera nyckel</button>
+      </div>
+    </div>
+
+    <div class="section-header" style="margin-top:1.5rem">
+      <div class="section-title">Befintliga nycklar</div>
+      <button class="btn btn-secondary btn-sm" onclick="loadKeys()">↻ Uppdatera</button>
+    </div>
+    <div id="keys-list">
+      <div class="alert alert-info">Ange admin API-nyckel i headern för att lista befintliga nycklar.</div>
+    </div>
+  </div>
+</main>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!--  MODALS                                                       -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+
+<!-- Upload modal -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <div class="modal-title">Ladda upp dataset</div>
+    <div id="upload-alert"></div>
+    <div class="form-group" style="margin-bottom:0.75rem">
+      <label>Tabellnamn</label>
+      <input type="text" id="uploadTableName" placeholder="t.ex. mina_data" />
+    </div>
+    <div class="form-group" style="margin-bottom:1.25rem">
+      <label>Fil (CSV eller Parquet)</label>
+      <input type="file" id="uploadFile" accept=".csv,.parquet" style="background:none;border:none;padding:0;color:var(--text)" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('uploadModal')">Avbryt</button>
+      <button class="btn btn-primary" onclick="uploadDataset()">Ladda upp</button>
+    </div>
+  </div>
+</div>
+
+<!-- Preview modal -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal" style="max-width:800px">
+    <div class="modal-title" id="previewTitle">Förhandsvisning</div>
+    <div class="preview-wrap" id="previewContent"></div>
+    <div class="modal-actions" style="margin-top:1rem">
+      <button class="btn btn-secondary" onclick="closeModal('previewModal')">Stäng</button>
+    </div>
+  </div>
+</div>
+
+<!-- Key result modal -->
+<div class="modal-overlay" id="keyModal">
+  <div class="modal">
+    <div class="modal-title">🔑 Access-nyckel skapad</div>
+    <div class="alert alert-success" style="margin-bottom:1rem">
+      Spara skriptet nedan — lösenorden visas bara en gång!
+    </div>
+    <div class="script-box" id="keyScript"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="copyScript()">📋 Kopiera</button>
+      <button class="btn btn-primary" onclick="closeModal('keyModal')">Klar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+const apiKey = () => document.getElementById('globalApiKey').value.trim();
+
+// ── TABS ───────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['datasets','access-keys'][i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => {
+    p.classList.toggle('active', p.id === `panel-${name}`);
+  });
+  if (name === 'datasets') loadDatasets();
+  if (name === 'access-keys' && apiKey()) loadKeys();
+}
+
+// ── API KEY CHANGE ─────────────────────────────────────────────────────────
+function onApiKeyChange() {
+  const isAdmin = apiKey().length > 0;
+  const badge = document.getElementById('roleBadge');
+  badge.textContent = isAdmin ? 'Admin' : 'Gäst';
+  badge.className = `badge ${isAdmin ? 'admin' : 'guest'}`;
+  if (isAdmin) loadKeys();
+}
+
+// ── FETCH HELPER ──────────────────────────────────────────────────────────
+async function api(method, path, body, isForm) {
+  const headers = {};
+  if (apiKey()) headers['X-Api-Key'] = apiKey();
+  const opts = { method, headers };
+  if (body && !isForm) {
+    headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  } else if (body && isForm) {
+    opts.body = body;
+  }
+  const res = await fetch(path, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || res.statusText);
+  }
+  return res.json();
+}
+
+// ── ALERT HELPERS ─────────────────────────────────────────────────────────
+function showAlert(id, msg, type = 'error') {
+  document.getElementById(id).innerHTML =
+    `<div class="alert alert-${type}">${msg}</div>`;
+}
+function clearAlert(id) { document.getElementById(id).innerHTML = ''; }
+
+// ── MODALS ────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openUploadModal() {
+  if (!apiKey()) { showAlert('datasets-alert','Ange admin API-nyckel för att ladda upp.'); return; }
+  clearAlert('upload-alert');
+  document.getElementById('uploadTableName').value = '';
+  document.getElementById('uploadFile').value = '';
+  openModal('uploadModal');
+}
+
+// ── DATASETS ──────────────────────────────────────────────────────────────
+async function loadDatasets() {
+  const el = document.getElementById('datasets-list');
+  clearAlert('datasets-alert');
+  el.innerHTML = '<div class="spinner"></div>';
+  try {
+    const data = await api('GET', '/api/datasets');
+    if (!data.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>Inga datasets ännu — ladda upp ett CSV eller Parquet-fil.</div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Dataset</th><th>Åtgärder</th></tr></thead>
+          <tbody>
+            ${data.map(d => `
+              <tr>
+                <td><strong>${d.namn}</strong></td>
+                <td style="display:flex;gap:0.5rem">
+                  <button class="btn btn-secondary btn-sm" onclick="previewDataset('${d.namn}')">👁 Visa</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteDataset('${d.namn}')">🗑 Radera</button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="alert alert-error">Kunde inte hämta datasets: ${e.message}</div>`;
+  }
+}
+
+async function previewDataset(namn) {
+  document.getElementById('previewTitle').textContent = `📦 ${namn}`;
+  document.getElementById('previewContent').innerHTML = '<div class="spinner"></div>';
+  openModal('previewModal');
+  try {
+    const d = await api('GET', `/api/datasets/${namn}?limit=50`);
+    if (!d.data.length) {
+      document.getElementById('previewContent').innerHTML = '<div class="alert alert-info">Tabellen är tom.</div>';
+      return;
+    }
+    const rows = d.data.map(r =>
+      `<tr>${d.kolumner.map(k => `<td>${r[k] ?? ''}</td>`).join('')}</tr>`
+    ).join('');
+    document.getElementById('previewContent').innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr>${d.kolumner.map(k => `<th>${k}</th>`).join('')}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <p style="font-size:0.8rem;color:var(--muted);margin-top:0.5rem">Visar max 50 rader</p>`;
+  } catch (e) {
+    document.getElementById('previewContent').innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+async function deleteDataset(namn) {
+  if (!apiKey()) { showAlert('datasets-alert','Ange admin API-nyckel för att radera.'); return; }
+  if (!confirm(`Radera dataset "${namn}"? Detta kan inte ångras.`)) return;
+  try {
+    await api('DELETE', `/api/datasets/${namn}`);
+    showAlert('datasets-alert', `Dataset "${namn}" raderades.`, 'success');
+    loadDatasets();
+  } catch (e) {
+    showAlert('datasets-alert', `Fel: ${e.message}`);
+  }
+}
+
+async function uploadDataset() {
+  const tabellnamn = document.getElementById('uploadTableName').value.trim();
+  const fil = document.getElementById('uploadFile').files[0];
+  clearAlert('upload-alert');
+  if (!tabellnamn) { showAlert('upload-alert','Ange ett tabellnamn.'); return; }
+  if (!fil) { showAlert('upload-alert','Välj en fil.'); return; }
+  const fd = new FormData();
+  fd.append('fil', fil);
+  fd.append('tabellnamn', tabellnamn);
+  try {
+    await api('POST', '/api/datasets/upload', fd, true);
+    closeModal('uploadModal');
+    showAlert('datasets-alert', `Dataset "${tabellnamn}" laddades upp!`, 'success');
+    loadDatasets();
+  } catch (e) {
+    showAlert('upload-alert', `Uppladdning misslyckades: ${e.message}`);
+  }
+}
+
+// ── ACCESS KEYS ───────────────────────────────────────────────────────────
+async function createKey() {
+  const username = document.getElementById('keyUsername').value.trim();
+  const permission = document.getElementById('keyPermission').value;
+  clearAlert('keys-alert');
+  if (!username) { showAlert('keys-alert','Ange ett användarnamn.'); return; }
+  try {
+    const res = await api('POST', '/api/access-keys', { username, permission });
+    document.getElementById('keyScript').textContent = res.duckdb_script || '-- Inget script genererat (lokalt läge utan S3)';
+    openModal('keyModal');
+    loadKeys();
+  } catch (e) {
+    showAlert('keys-alert', `Kunde inte skapa nyckel: ${e.message}`);
+  }
+}
+
+async function loadKeys() {
+  const el = document.getElementById('keys-list');
+  if (!apiKey()) {
+    el.innerHTML = '<div class="alert alert-info">Ange admin API-nyckel för att lista befintliga nycklar.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="spinner"></div>';
+  try {
+    const data = await api('GET', '/api/access-keys');
+    const keys = data.keys || [];
+    if (!keys.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">🔑</div>Inga nycklar skapade ännu.</div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Key ID / Användare</th><th>Behörighet</th><th>Åtgärd</th></tr></thead>
+          <tbody>
+            ${keys.map(k => `
+              <tr>
+                <td><code style="font-size:0.85rem">${k.key_id}</code></td>
+                <td><span class="perm ${k.permission === 'readwrite' ? 'rw' : 'ro'}">${k.permission}</span></td>
+                <td><button class="btn btn-danger btn-sm" onclick="revokeKey('${k.key_id}')">Återkalla</button></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="alert alert-error">Kunde inte hämta nycklar: ${e.message}</div>`;
+  }
+}
+
+async function revokeKey(keyId) {
+  if (!confirm(`Återkalla nyckel "${keyId}"? Användaren förlorar all access.`)) return;
+  try {
+    await api('DELETE', `/api/access-keys/${keyId}`);
+    showAlert('keys-alert', `Nyckel "${keyId}" återkallades.`, 'success');
+    loadKeys();
+  } catch (e) {
+    showAlert('keys-alert', `Fel: ${e.message}`);
+  }
+}
+
+function copyScript() {
+  const text = document.getElementById('keyScript').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showAlert('keys-alert','Skriptet kopierades till urklipp!', 'success');
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+loadDatasets();
+</script>
+</body>
+</html>

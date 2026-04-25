@@ -14,6 +14,8 @@ När du är klar med denna guide ska du kunna:
 - ✅ Förklara varför man behöver tre separata deployments
 - ✅ Förklara hur Python och Java ansluter till DuckLake på olika sätt
 - ✅ Identifiera och förstå de vanligaste fällorna vid deployment
+- ✅ Begära och använda access-nycklar för att ansluta till en central lake
+- ✅ Förklara skillnaden mellan read-only och read/write behörighet
 
 ---
 
@@ -26,6 +28,7 @@ När du är klar med denna guide ska du kunna:
 | [03 — Deployment](03-deployment.md) | KTH Cloud, Kubernetes, miljövariabler | ~20 min |
 | [04 — Python API](04-python-api.md) | FastAPI, DuckDB, anslutning | ~20 min |
 | [05 — Java API](05-java-api.md) | Spring Boot, JDBC, skillnader mot Python | ~20 min |
+| [06 — Access-nycklar](06-access-nycklar.md) | Behörigheter, nyckelgenerering, MinIO/Garage | ~30 min |
 | [Läxor](laxor/) | Övningar per modul | ~2 timmar |
 
 ---
