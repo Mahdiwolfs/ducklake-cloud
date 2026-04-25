@@ -82,30 +82,35 @@ class MinioAccessTokenManager(ObjectStoreAccessTokenManager):
     """Hanterar access-nycklar via MinIO Admin API."""
 
     def __init__(self, endpoint: str, admin_key: str, admin_secret: str, bucket: str):
+        import tempfile
         from minio import MinioAdmin
-        self._admin = MinioAdmin(endpoint, access_key=admin_key, secret_key=admin_secret, secure=False)
+        from minio.credentials import StaticProvider
+        self._admin = MinioAdmin(endpoint, credentials=StaticProvider(admin_key, admin_secret), secure=False)
         self._endpoint = endpoint
         self._bucket = bucket
         for name, policy in [("ducklake-ro", _POLICY_READONLY), ("ducklake-rw", _POLICY_READWRITE)]:
             try:
-                self._admin.add_policy(name, policy)
+                with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+                    f.write(policy)
+                    tmp_path = f.name
+                self._admin.policy_add(name, tmp_path)
             except Exception:
                 pass
 
     def create_key(self, username: str, permission: str) -> ObjectStoreKey:
         secret = _rand()
-        self._admin.add_user(username, secret)
-        self._admin.set_policy("ducklake-ro" if permission == "readonly" else "ducklake-rw", user=username)
+        self._admin.user_add(username, secret)
+        self._admin.attach_policy(["ducklake-ro" if permission == "readonly" else "ducklake-rw"], user=username)
         return ObjectStoreKey(key_id=username, secret=secret,
                               permission=permission, endpoint=self._endpoint,
                               bucket=self._bucket)
 
     def revoke_key(self, key_id: str) -> None:
-        self._admin.remove_user(key_id)
+        self._admin.user_remove(key_id)
 
     def list_keys(self) -> list[dict]:
         try:
-            users = self._admin.list_users()
+            users = self._admin.user_list()
             return [
                 {"key_id": ak, "permission": "readwrite" if info.get("policyName") == "ducklake-rw" else "readonly"}
                 for ak, info in users.items()
