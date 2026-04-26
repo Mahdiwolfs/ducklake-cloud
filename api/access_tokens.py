@@ -100,7 +100,11 @@ class MinioAccessTokenManager(ObjectStoreAccessTokenManager):
     def create_key(self, username: str, permission: str) -> ObjectStoreKey:
         secret = _rand()
         self._admin.user_add(username, secret)
-        self._admin.attach_policy(["ducklake-ro" if permission == "readonly" else "ducklake-rw"], user=username)
+        try:
+            self._admin.attach_policy(["ducklake-ro" if permission == "readonly" else "ducklake-rw"], user=username)
+        except Exception as e:
+            if "AlreadyApplied" not in str(e):
+                raise
         return ObjectStoreKey(key_id=username, secret=secret,
                               permission=permission, endpoint=self._endpoint,
                               bucket=self._bucket)
@@ -111,10 +115,11 @@ class MinioAccessTokenManager(ObjectStoreAccessTokenManager):
     def list_keys(self) -> list[dict]:
         try:
             users = self._admin.user_list()
-            return [
-                {"key_id": ak, "permission": "readwrite" if info.get("policyName") == "ducklake-rw" else "readonly"}
-                for ak, info in users.items()
-            ]
+            result = []
+            for ak, info in users.items():
+                policy = getattr(info, "policy_name", None) or (info.get("policyName") if isinstance(info, dict) else None)
+                result.append({"key_id": ak, "permission": "readwrite" if policy == "ducklake-rw" else "readonly"})
+            return result
         except Exception:
             return []
 
