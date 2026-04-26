@@ -883,4 +883,4 @@ if (rs.getInt(1) == 0) {
 | 2. Lagring | MinIO | 9000 | Private |
 | 3. API | FastAPI (Python) eller Spring Boot (Java) | 8000/8080 | Public |
 
-**Fullständig källkod:** [github.com/WildRelation/ducklake-cloud](https://github.com/WildRelation/ducklake-cloud)
+**Fullständig källkod:** [github.com/Mahdiwolfs/ducklake-cloud](https://github.com/Mahdiwolfs/ducklake-cloud)

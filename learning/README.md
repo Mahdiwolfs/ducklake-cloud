@@ -29,6 +29,7 @@ När du är klar med denna guide ska du kunna:
 | [04 — Python API](04-python-api.md) | FastAPI, DuckDB, anslutning | ~20 min |
 | [05 — Java API](05-java-api.md) | Spring Boot, JDBC, skillnader mot Python | ~20 min |
 | [06 — Access-nycklar](06-access-nycklar.md) | Behörigheter, nyckelgenerering, MinIO/Garage | ~30 min |
+| [Lokal setup](lokal-setup.md) | Bygg hela systemet från grunden lokalt | ~60 min |
 | [Läxor](laxor/) | Övningar per modul | ~2 timmar |
 
 ---
@@ -43,5 +44,5 @@ När du är klar med denna guide ska du kunna:
 
 ## Källkod och live-exempel
 
-- Repo: [github.com/WildRelation/ducklake-cloud](https://github.com/WildRelation/ducklake-cloud)
+- Repo: [github.com/Mahdiwolfs/ducklake-cloud](https://github.com/Mahdiwolfs/ducklake-cloud)
 - Fullständig guide: [GUIDE.md](../GUIDE.md)
