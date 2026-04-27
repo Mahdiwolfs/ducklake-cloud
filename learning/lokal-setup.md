@@ -268,7 +268,7 @@ def init_db():
         con.execute("""
             CREATE TABLE IF NOT EXISTS lake.ordrar (
                 id INTEGER, kund_id INTEGER, produkt_id INTEGER,
-                antal INTEGER NOT NULL, skapad TIMESTAMP DEFAULT current_timestamp
+                antal INTEGER NOT NULL, skapad TIMESTAMP
             )
         """)
 ```
